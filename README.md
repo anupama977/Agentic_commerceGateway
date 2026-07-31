@@ -1,4 +1,4 @@
-# CargoBridge
+# Silos
 
 **Enterprise data silos cost money quietly.**
 
