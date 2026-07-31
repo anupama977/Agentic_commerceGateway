@@ -143,8 +143,8 @@ Other orders worth showing: `ord_1004` (reputable agent, bulk order, held by the
 ```bash
 git clone https://github.com/anupama977/Agentic_commerceGateway.git
 cd Agentic_commerceGateway
-npm install          # also installs widget dependencies
-npm run build        # bundles widgets + compiles TypeScript
+npm install          # server dependencies
+npm run build        # installs widget deps if needed, bundles widgets, compiles TypeScript
 npm run dev          # development (STDIO transport)
 npm run start:prod   # production (STDIO + HTTP SSE)
 ```
