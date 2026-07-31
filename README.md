@@ -1,35 +1,193 @@
-# Silos
+# Agentic Commerce Gateway
 
-**Enterprise data silos cost money quietly.**
+> AI-powered fraud detection and trust verification gateway for autonomous shopping agents.
 
-A container sits stuck at port for six days. Shipping ops knows it's 
-stuck. Finance knows there's a penalty clause. Neither system talks 
-to the other — so nobody knows it's already cost ₹84,000 until the 
-invoice arrives.
+## 🚀 Overview
 
-CargoBridge is an MCP agent that closes that gap in real time.
+Agentic Commerce Gateway is a seller-side security layer built for the future of AI-driven commerce. As autonomous shopping agents begin making purchases on behalf of users, merchants need a reliable way to verify these agents before completing transactions.
 
-## What it does
+This project screens AI buying agents, evaluates their trustworthiness, verifies sales receipts against on-chain settlement records, and autonomously flags or blocks suspicious transactions.
 
-1. **Inspects** — autonomously detects delayed shipments in the logistics system
-2. **Calculates** — reads raw contract clauses from the finance system, 
-   interprets which one applies, computes the live penalty
-3. **Acts** — dispatches backup transport instead of sending an alert
+Instead of replacing existing payment systems, the gateway acts as an intelligent verification layer between the buyer's AI agent and the merchant's checkout.
 
-## Why an agent, not a script
+---
 
-Contract clauses are ambiguous: tiered rates, grace periods conditional 
-on fault attribution, force majeure wording that may or may not apply. 
-Deciding *which clause governs a given situation* is judgment, not lookup.
+## ✨ Features
 
-The `logistics` and `finance` modules share no imports, no types, and no 
-data. The agent is the only thing bridging them — the silo is real, not 
-simulated.
+- 🤖 AI Agent Identity Verification
+- 🔒 Trust Score Calculation
+- 📦 Order Risk Analysis
+- 🧾 Receipt vs Settlement Verification
+- 🚩 Automatic Fraud Detection
+- ⛔ Agent Blacklisting
+- 📊 Seller Dashboard
+- 🛒 Mock Merchant Store (NovaGear)
 
-## Built with
+---
 
-- [NitroStack](https://nitrostack.ai) — TypeScript MCP framework
-- Model Context Protocol
-- React widgets for incident rendering
+## 🏗️ Architecture
 
-> Built for the NitroStack MCP Hackathon at SRMIST.
+```
+AI Shopping Agent
+        │
+        ▼
+Agentic Commerce Gateway
+        │
+ ┌──────────────┐
+ │ Screen Agent │
+ └──────────────┘
+        │
+        ▼
+Compute Trust Score
+        │
+        ▼
+Decision Engine
+Approve / Hold / Decline
+        │
+        ▼
+Verify Receipt
+        │
+        ▼
+Flag or Block Agent
+        │
+        ▼
+Seller Dashboard
+```
+
+---
+
+## 🔄 Workflow
+
+1. AI agent places an order.
+2. Gateway validates the agent's identity and signature.
+3. Trust score is calculated using:
+   - Reputation
+   - Purchase history
+   - Order anomalies
+   - Velocity checks
+4. Order is approved, held, or declined.
+5. Receipt is verified against settlement records.
+6. Any mismatch automatically flags the order.
+7. Suspicious agents are blacklisted.
+8. Dashboard updates seller analytics.
+
+---
+
+## 🛠 MCP Tools
+
+| Tool | Purpose |
+|------|---------|
+| `list_products` | Retrieve available products |
+| `place_agent_order` | Simulate AI agent purchase |
+| `screen_agent` | Verify agent identity |
+| `compute_trust_score` | Calculate fraud risk |
+| `verify_receipt` | Compare receipt with settlement record |
+| `flag_order` | Mark suspicious orders |
+| `blocklist_agent` | Block fraudulent agents |
+| `get_sales_dashboard` | Seller analytics dashboard |
+
+---
+
+## 📁 Project Structure
+
+```
+src/
+│
+├── fixtures/
+│   ├── products.json
+│   ├── agents.json
+│   ├── orders.json
+│   ├── registry.json
+│   └── onchain-records.json
+│
+├── tools/
+│
+├── widgets/
+│
+└── gateway/
+```
+
+---
+
+## 📊 Demo Scenarios
+
+### ✅ Trusted Purchase
+
+A verified AI shopping agent purchases a product successfully after passing all trust checks.
+
+---
+
+### 🚫 Fraudulent Agent
+
+A spoofed AI agent attempts a bulk purchase.
+
+The gateway detects:
+
+- Invalid signature
+- Low reputation
+- Suspicious order size
+
+The order is rejected and the agent is blacklisted.
+
+---
+
+### 🔍 Tampered Receipt
+
+A transaction appears legitimate, but the receipt differs from the settlement record.
+
+The gateway detects the mismatch, flags the order, and updates the dashboard.
+
+---
+
+## 📈 Dashboard
+
+The seller dashboard provides:
+
+- Orders by AI agents
+- Approved vs declined transactions
+- Flagged orders
+- Blacklisted agents
+- Revenue protected
+- Trust score insights
+
+---
+
+## 💡 Why Agentic Commerce Gateway?
+
+As AI agents become capable of purchasing products autonomously, traditional fraud prevention methods are no longer sufficient.
+
+This gateway enables merchants to:
+
+- Trust autonomous buyers
+- Reduce fraudulent transactions
+- Verify settlement integrity
+- Protect revenue
+- Maintain a seamless checkout experience
+
+---
+
+## 🛠 Tech Stack
+
+- TypeScript
+- NitroStack SDK
+- NitroCloud
+- MCP (Model Context Protocol)
+- JSON Fixtures
+- AI-powered Decision Logic
+
+---
+
+## Future Improvements
+
+- ACP protocol integration
+- AP2 and MPP support
+- Live blockchain verification
+- Multi-merchant support
+- Real payment gateway integration
+- Advanced behavioral anomaly detection
+
+---
+
+## License
+
+MIT License
