@@ -4,6 +4,9 @@
 
 Built with the **NitroStack TypeScript SDK** · Track: **Fintech** · Demo store: **NovaGear** (mock electronics retailer)
 
+**Live on NitroCloud:** https://agentic-commerce-gateway-6a6cafaa-rudra-srmist.app.nitrocloud.ai
+**MCP endpoint:** `https://agentic-commerce-gateway-6a6cafaa-rudra-srmist.app.nitrocloud.ai/mcp`
+
 ---
 
 ## The problem
