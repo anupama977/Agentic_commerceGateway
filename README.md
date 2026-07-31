@@ -177,16 +177,7 @@ This gateway enables merchants to:
 
 ---
 
-## Future Improvements
 
-- ACP protocol integration
-- AP2 and MPP support
-- Live blockchain verification
-- Multi-merchant support
-- Real payment gateway integration
-- Advanced behavioral anomaly detection
-
----
 
 ## License
 
