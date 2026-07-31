@@ -152,6 +152,15 @@ npm run dev          # development (STDIO transport)
 npm run start:prod   # production (STDIO + HTTP SSE)
 ```
 
+### Test it
+
+```bash
+npm test        # builds, then runs all 3 scenarios against the local server over STDIO
+npm run test:live   # runs the same suite against the deployed NitroCloud server over HTTP
+```
+
+The suite speaks real MCP rather than calling the functions directly, so a green run means the tools work through the protocol: the full tool/resource/prompt surface, all three demo scenarios, the human-review and hold paths, the unknown-order error path, and that `reset_demo` restores fixture state. 31 checks.
+
 ### Connect it in NitroStudio
 
 1. **Add Server → Nitro Project**, browse to this folder, **Open Project → Studio App Canvas**.
