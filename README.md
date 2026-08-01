@@ -177,6 +177,8 @@ MCP_TRANSPORT_TYPE=http PORT=3000 npm run start:prod   # then open http://localh
 
 The endpoint field accepts any other server if you want to point a local page at the deployed gateway.
 
+The console can also be published to any static host — `vercel.json` deploys `console/` as-is. There is no MCP server on such a host, so the console detects that and falls back to the deployed gateway automatically. The gateway itself must stay on NitroCloud: it is a long-running process with in-memory state, which serverless hosting cannot preserve between requests.
+
 Each case runs the real tool chain and prints the documents as the calls land, with the measured round-trip on every step:
 
 | Case | Chain |
