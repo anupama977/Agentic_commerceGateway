@@ -206,13 +206,17 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid currentColor;out
 
 const DEPLOYED = 'https://agentic-commerce-gateway-6a6cafaa-rudra-srmist.app.nitrocloud.ai';
 
-/* Served by the gateway itself (/console) → talk to this same origin, so the
-   page works identically on localhost and on NitroCloud. Opened straight from
-   the filesystem → fall back to the deployed service. */
-const DEFAULT_BASE = location.protocol.startsWith('http') ? location.origin : DEPLOYED;
+/* The console may be served by the gateway itself (/console), by a static host
+   with no MCP server on it (Vercel, GitHub Pages), or opened straight from the
+   filesystem. So the origin serving the page is only a *candidate* — it is
+   tried first, and the deployed service is the fallback. */
+const SAME_ORIGIN = location.protocol.startsWith('http') ? location.origin : null;
+const DEFAULT_BASE = SAME_ORIGIN || DEPLOYED;
 
 const mcp = {
   base: DEFAULT_BASE,
+  /** Set once the user types an endpoint, which then wins outright. */
+  pinned: false,
   session: null,
   id: 0,
   ready: false,
@@ -254,18 +258,36 @@ const mcp = {
     return msg;
   },
 
+  /** Hosts to try, in order, when the user has not pinned one. */
+  candidates() {
+    if (this.pinned) return [this.base];
+    if (SAME_ORIGIN && SAME_ORIGIN !== DEPLOYED) return [SAME_ORIGIN, DEPLOYED];
+    return [DEPLOYED];
+  },
+
   async connect() {
-    this.session = null;
-    this.ready = false;
-    const init = await this.send('initialize', {
-      protocolVersion: '2024-11-05',
-      capabilities: {},
-      clientInfo: { name: 'gateway-console', version: '1.0.0' },
-    });
-    if (init.error) throw new Error(JSON.stringify(init.error));
-    await this.send('notifications/initialized', {}, true);
-    this.ready = true;
-    return init.result;
+    let lastError;
+
+    for (const base of this.candidates()) {
+      this.base = base;
+      this.session = null;
+      this.ready = false;
+      try {
+        const init = await this.send('initialize', {
+          protocolVersion: '2024-11-05',
+          capabilities: {},
+          clientInfo: { name: 'gateway-console', version: '1.0.0' },
+        });
+        if (init.error) throw new Error(JSON.stringify(init.error));
+        await this.send('notifications/initialized', {}, true);
+        this.ready = true;
+        return init.result;
+      } catch (e) {
+        lastError = e;   // no MCP server on this origin — try the next one
+      }
+    }
+
+    throw lastError || new Error('no reachable MCP endpoint');
   },
 
   /** Unwrap a tools/call reply the way the e2e harness does. */
@@ -799,6 +821,8 @@ async function guard(fn) {
 
 async function connect() {
   await mcp.connect();
+  // Show whichever candidate actually answered, not the one we started from.
+  $('endpoint').value = mcp.base;
   setStatus('live', new URL(mcp.endpoint()).host);
   renderDashboard(await mcp.call('get_sales_dashboard', {}));
 }
@@ -832,7 +856,9 @@ function boot() {
 
   $('endpoint').value = mcp.base;
   $('endpoint').addEventListener('change', (e) => {
-    mcp.base = e.target.value.trim() || DEFAULT_BASE;
+    const typed = e.target.value.trim();
+    mcp.pinned = !!typed;          // an explicit endpoint wins over the fallback chain
+    mcp.base = typed || DEFAULT_BASE;
     mcp.ready = false;
     mcp.session = null;
     guard(connect);
