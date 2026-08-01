@@ -42,6 +42,24 @@ const GLYPH: Record<string, string> = {
   pending: '·',
 };
 
+/**
+ * The dashboard is the one document the server sends no `nextStep` for — it
+ * reports on the whole store rather than one order — so the footer states what
+ * currently needs a person, in order of urgency.
+ */
+function nextAction(d: DashboardData): string {
+  if (d.counts.flagged > 0) {
+    return `${d.counts.flagged} disputed order(s) open. Settle or write off each before the next payout run.`;
+  }
+  if (d.counts.held > 0) {
+    return `${d.counts.held} order(s) await seller sign-off above the ${d.hitlThreshold} threshold.`;
+  }
+  if (d.counts.pending > 0) {
+    return `${d.counts.pending} order(s) not yet screened. Run compute_trust_score on each.`;
+  }
+  return 'No orders need seller action. Screening is current.';
+}
+
 export default function SalesDashboard() {
   const theme = useTheme();
   const { getToolOutput } = useWidgetSDK();
@@ -347,6 +365,20 @@ export default function SalesDashboard() {
           ))
         )}
       </Section>
+
+      <div
+        style={{
+          borderTop: `1px dashed ${t.rule}`,
+          background: t.stock,
+          padding: '10px 16px',
+          fontFamily: MONO,
+          fontSize: 11,
+          color: t.inkSoft,
+          lineHeight: 1.4,
+        }}
+      >
+        NEXT — {nextAction(data)}
+      </div>
     </Slip>
   );
 }
