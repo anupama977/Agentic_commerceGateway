@@ -161,6 +161,30 @@ npm run test:live   # runs the same suite against the deployed NitroCloud server
 
 The suite speaks real MCP rather than calling the functions directly, so a green run means the tools work through the protocol: the full tool/resource/prompt surface, all three demo scenarios, the human-review and hold paths, the unknown-order error path, and that `reset_demo` restores fixture state. 31 checks.
 
+### Seller console (browser)
+
+`console/index.html` is a standalone seller-facing console. It speaks real MCP over Streamable HTTP straight from the browser — the same wire protocol the test suite uses — so every score, signature check and rupee figure on screen came back from the server. Nothing is canned.
+
+```bash
+npx serve console          # or: python3 -m http.server 8899 --directory console
+```
+
+Open it and pick a case; by default it points at the deployed NitroCloud server, and the endpoint field accepts any other (e.g. `http://localhost:3000` with `MCP_TRANSPORT_TYPE=http`).
+
+Each case runs the real tool chain and prints the documents as the calls land, with the measured round-trip on every step:
+
+| Case | Chain |
+|---|---|
+| 01 · Clean sale | `place_agent_order` → `screen_agent` → `compute_trust_score` → approve |
+| 02 · Fraudulent buyer blocked | …→ decline → `blocklist_agent` |
+| 03 · Tampered receipt caught | …→ `verify_receipt` → `flag_order` → `blocklist_agent` |
+
+Case 03's `flag_order` evidence is built from the field mismatches `verify_receipt` just returned, so the dispute cites the actual diff.
+
+Two query parameters help when recording a demo: `?run=all|clean|fraud|tampered` plays a case on load with no clicking, and `?theme=light|dark` pins the theme (otherwise it follows the OS).
+
+The console is built to the project's design system — the same document primitives, tokens and rules as the MCP widgets, so the two surfaces read as one product.
+
 ### Connect it in NitroStudio
 
 1. **Add Server → Nitro Project**, browse to this folder, **Open Project → Studio App Canvas**.
@@ -217,6 +241,12 @@ src/
     ├── order-review/
     ├── receipt-diff/
     └── sales-dashboard/
+
+console/
+└── index.html                     seller console — browser MCP client, no build step
+
+scripts/
+└── e2e.mjs                        end-to-end suite over real MCP
 ```
 
 **Why fixtures are `.ts`, not `.json`:** `nitrostack-cli build` compiles the server with `tsc`, which does not copy loose JSON assets into `dist/`. Authoring fixtures as typed modules means they compile into `dist/` alongside the code — no asset-copy step, no runtime path resolution, and no chance of a fixture going missing once deployed. They are also type-checked against the domain types.
