@@ -13,8 +13,18 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
-/** Sits next to this module in `dist/console/`, put there by the build step. */
-const CONSOLE_HTML = path.join(path.dirname(fileURLToPath(import.meta.url)), 'index.html');
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+
+/**
+ * Where to look for the console, in order:
+ *   1. beside this module in `dist/console/` — put there by the build step
+ *   2. the source tree, for the case where `tsc` ran without `npm run build`
+ * Both are derived from this module's own location, never an absolute path.
+ */
+const CONSOLE_CANDIDATES = [
+  path.join(HERE, 'index.html'),
+  path.join(HERE, '..', '..', 'console', 'index.html'),
+];
 
 export const CONSOLE_PATH = '/console';
 
@@ -45,12 +55,20 @@ export function registerConsoleRoute(server: ServerLike): boolean {
 
   // Read once at startup: the file is immutable for the life of the process,
   // and failing here is better than failing on a judge's first request.
-  let html: string;
-  try {
-    html = readFileSync(CONSOLE_HTML, 'utf8');
-  } catch {
+  let html: string | undefined;
+  for (const candidate of CONSOLE_CANDIDATES) {
+    try {
+      html = readFileSync(candidate, 'utf8');
+      break;
+    } catch {
+      // try the next location
+    }
+  }
+
+  if (!html) {
     console.error(
-      `⚠️  Seller console asset missing at ${CONSOLE_HTML} — run "npm run build" to copy it.`,
+      `⚠️  Seller console asset not found (looked in: ${CONSOLE_CANDIDATES.join(', ')}) — ` +
+        'run "npm run build" to copy it into dist/.',
     );
     return false;
   }
