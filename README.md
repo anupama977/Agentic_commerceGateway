@@ -163,13 +163,19 @@ The suite speaks real MCP rather than calling the functions directly, so a green
 
 ### Seller console (browser)
 
-`console/index.html` is a standalone seller-facing console. It speaks real MCP over Streamable HTTP straight from the browser — the same wire protocol the test suite uses — so every score, signature check and rupee figure on screen came back from the server. Nothing is canned.
+The deployed service serves a seller-facing console next to its MCP endpoint:
+
+**https://agentic-commerce-gateway-6a6cafaa-rudra-srmist.app.nitrocloud.ai/console**
+
+It speaks real MCP over Streamable HTTP straight from the browser — the same wire protocol the test suite uses — so every score, signature check and rupee figure on screen came back from the server. Nothing is canned.
+
+The console calls `/mcp` on whatever origin serves it, so the same page works locally with no edit:
 
 ```bash
-npx serve console          # or: python3 -m http.server 8899 --directory console
+MCP_TRANSPORT_TYPE=http PORT=3000 npm run start:prod   # then open http://localhost:3000/console
 ```
 
-Open it and pick a case; by default it points at the deployed NitroCloud server, and the endpoint field accepts any other (e.g. `http://localhost:3000` with `MCP_TRANSPORT_TYPE=http`).
+The endpoint field accepts any other server if you want to point a local page at the deployed gateway.
 
 Each case runs the real tool chain and prints the documents as the calls land, with the measured round-trip on every step:
 
@@ -221,6 +227,7 @@ None are required — the project runs entirely on bundled fixtures with no exte
 src/
 ├── index.ts                       bootstrap
 ├── app.module.ts                  root module
+├── console/console.route.ts       serves the seller console on GET /console
 ├── fixtures/                      mock data (TypeScript modules, not JSON —
 │   ├── products.ts                see note below)
 │   ├── agents.ts                  8 buying agents + reputation registry
@@ -243,10 +250,11 @@ src/
     └── sales-dashboard/
 
 console/
-└── index.html                     seller console — browser MCP client, no build step
+└── index.html                     seller console — browser MCP client, single file
 
 scripts/
-└── e2e.mjs                        end-to-end suite over real MCP
+├── e2e.mjs                        end-to-end suite over real MCP
+└── copy-console.mjs               copies the console into dist/ after tsc
 ```
 
 **Why fixtures are `.ts`, not `.json`:** `nitrostack-cli build` compiles the server with `tsc`, which does not copy loose JSON assets into `dist/`. Authoring fixtures as typed modules means they compile into `dist/` alongside the code — no asset-copy step, no runtime path resolution, and no chance of a fixture going missing once deployed. They are also type-checked against the domain types.

@@ -206,8 +206,13 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid currentColor;out
 
 const DEPLOYED = 'https://agentic-commerce-gateway-6a6cafaa-rudra-srmist.app.nitrocloud.ai';
 
+/* Served by the gateway itself (/console) → talk to this same origin, so the
+   page works identically on localhost and on NitroCloud. Opened straight from
+   the filesystem → fall back to the deployed service. */
+const DEFAULT_BASE = location.protocol.startsWith('http') ? location.origin : DEPLOYED;
+
 const mcp = {
-  base: DEPLOYED,
+  base: DEFAULT_BASE,
   session: null,
   id: 0,
   ready: false,
@@ -827,7 +832,7 @@ function boot() {
 
   $('endpoint').value = mcp.base;
   $('endpoint').addEventListener('change', (e) => {
-    mcp.base = e.target.value.trim() || DEPLOYED;
+    mcp.base = e.target.value.trim() || DEFAULT_BASE;
     mcp.ready = false;
     mcp.session = null;
     guard(connect);
