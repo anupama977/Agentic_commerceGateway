@@ -156,6 +156,25 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid currentColor;out
 .gw-exposure{margin:0 16px;border-top:1px solid var(--rule);padding:12px 0;display:flex;align-items:baseline;justify-content:space-between;gap:12px}
 .gw-exposure .n{font-family:var(--font-mono);font-size:var(--text-2xl);font-weight:700}
 
+/* seller actions — real tool calls, issued from the document they act on */
+.gw-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.gw-act{background:transparent;border:1px solid var(--rule);color:var(--ink-soft);padding:6px 11px;cursor:pointer;font-family:var(--font-mono);font-size:10.5px;letter-spacing:0.08em;text-transform:uppercase}
+.gw-act:hover:not(:disabled){color:var(--ink);border-color:var(--ink)}
+.gw-act:disabled{opacity:0.4;cursor:default}
+.gw-act[data-tone="danger"]{color:var(--danger);border-color:var(--danger)}
+.gw-act[data-tone="hold"]{color:var(--hold);border-color:var(--hold)}
+.gw-act[data-done="true"]{opacity:0.5;cursor:default}
+.gw-act-note{font-family:var(--font-mono);font-size:10.5px;color:var(--ink-soft);margin-top:8px;line-height:1.5}
+
+/* alert rail — raised only when the toggle is on */
+.gw-alerts{max-width:620px;margin:0 auto 14px;border:1px solid var(--danger);background:var(--danger-wash)}
+.gw-alerts.empty{display:none}
+.gw-alert-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:9px 14px;border-bottom:1px solid var(--danger)}
+.gw-alert{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:9px;align-items:baseline;padding:7px 14px;border-bottom:1px solid var(--rule-soft);font-family:var(--font-mono);font-size:11.5px}
+.gw-alert:last-child{border-bottom:0}
+.gw-alert .g{font-weight:700}
+.gw-alert .amt{font-variant-numeric:tabular-nums}
+
 .gw-foot{border-top:1px dashed var(--rule);background:var(--stock);padding:10px 16px;font-family:var(--font-mono);font-size:11px;color:var(--ink-soft);line-height:1.4}
 
 .gw-err{font-family:var(--font-mono);font-size:11.5px;line-height:1.5;color:var(--danger);background:var(--danger-wash);border-left:3px solid var(--danger);padding:10px 12px;margin:10px 0;word-break:break-word}
@@ -168,9 +187,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid currentColor;out
 
 <nav class="gw-shell-nav">
   <span class="gw-wordmark">NovaGear <span>Agentic Commerce Gateway</span></span>
-  <button class="gw-shell-tab" type="button" data-case="clean"    aria-current="false"></button>
-  <button class="gw-shell-tab" type="button" data-case="fraud"    aria-current="false"></button>
-  <button class="gw-shell-tab" type="button" data-case="tampered" aria-current="false"></button>
+  <span id="caseTabs" style="display:contents"></span>
 </nav>
 
 <div class="gw-shell-sub">
@@ -188,8 +205,17 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid currentColor;out
       <span class="g" id="statusGlyph">·</span>
       <span class="h" id="statusHost">connecting</span>
     </span>
+    <button class="gw-shell-chip" type="button" id="alerts" aria-pressed="true">⚑ alerts on</button>
     <button class="gw-shell-chip" type="button" id="theme">☾ dark</button>
   </span>
+</div>
+
+<div class="gw-alerts empty" id="alertRail" role="status">
+  <div class="gw-alert-head">
+    <span class="ds-micro" style="color:var(--danger)">Payment alerts</span>
+    <span class="ds-micro" id="alertCount" style="color:var(--danger)">0</span>
+  </div>
+  <div id="alertList"></div>
 </div>
 
 <main class="gw-stage" id="stage" aria-live="polite">
@@ -353,6 +379,34 @@ const CASES = [
         }) },
       { label: 'ban agent from store',    tool: 'blocklist_agent',
         args: { agent_id: 'agt_relay_lyra', reason: 'Tampered settlement record on ord_1003' } },
+      { label: 'update seller dashboard', tool: 'get_sales_dashboard', args: {} },
+    ],
+  },
+  {
+    id: 'threshold', no: '04', name: 'Held for a human',
+    steps: [
+      { label: 'normalize payload',       tool: 'place_agent_order',   args: { order_ref: 'ord_1009' } },
+      { label: 'screen agent identity',   tool: 'screen_agent',        args: { order_id: 'ord_1009' } },
+      { label: 'score and decide',        tool: 'compute_trust_score', args: { order_id: 'ord_1009' } },
+      { label: 'update seller dashboard', tool: 'get_sales_dashboard', args: {} },
+    ],
+  },
+  {
+    id: 'velocity', no: '05', name: 'Velocity abuse held',
+    steps: [
+      { label: 'normalize payload',       tool: 'place_agent_order',   args: { order_ref: 'ord_1005' } },
+      { label: 'screen agent identity',   tool: 'screen_agent',        args: { order_id: 'ord_1005' } },
+      { label: 'score and decide',        tool: 'compute_trust_score', args: { order_id: 'ord_1005' } },
+      { label: 'update seller dashboard', tool: 'get_sales_dashboard', args: {} },
+    ],
+  },
+  {
+    id: 'payee', no: '06', name: 'Payee redirect caught',
+    steps: [
+      { label: 'normalize payload',       tool: 'place_agent_order',   args: { order_ref: 'ord_1008' } },
+      { label: 'screen agent identity',   tool: 'screen_agent',        args: { order_id: 'ord_1008' } },
+      { label: 'score and decide',        tool: 'compute_trust_score', args: { order_id: 'ord_1008' } },
+      { label: 'diff receipt vs chain',   tool: 'verify_receipt',      args: { order_id: 'ord_1008' } },
       { label: 'update seller dashboard', tool: 'get_sales_dashboard', args: {} },
     ],
   },
@@ -681,6 +735,117 @@ function renderBlocklist(doc, d) {
   setFooter(doc, d.nextStep);
 }
 
+/* --- payment alerts ------------------------------------------------------- */
+/* A seller-facing rail: anything that costs money or needs a person lands here,
+   so the operator does not have to read every document to spot the exposure. */
+
+let alertsOn = true;
+const alertRows = [];
+
+function raiseAlert(glyph, tone, text, amount) {
+  alertRows.push({ glyph, tone, text, amount });
+  drawAlerts();
+}
+
+function clearAlerts() { alertRows.length = 0; drawAlerts(); }
+
+function drawAlerts() {
+  const rail = $('alertRail');
+  const list = $('alertList');
+  const show = alertsOn && alertRows.length > 0;
+  rail.classList.toggle('empty', !show);
+  $('alertCount').textContent = String(alertRows.length);
+  list.innerHTML = '';
+  if (!show) return;
+  alertRows.forEach(a => {
+    list.appendChild(el('div', 'gw-alert',
+      `<span class="g" style="color:var(--${a.tone})">${a.glyph}</span>` +
+      `<span>${esc(a.text)}</span>` +
+      `<span class="amt" style="color:var(--${a.tone})">${esc(a.amount || '')}</span>`));
+  });
+}
+
+/** Which results are worth alerting a seller about. */
+function alertFor(tool, d) {
+  if (tool === 'compute_trust_score') {
+    if (d.verdict === 'decline') {
+      raiseAlert(GLYPH.fail, 'danger', `${d.orderId} declined — ${d.agentDisplayName}, score ${d.score}/100`, d.orderTotal);
+    } else if (d.verdict === 'hold') {
+      raiseAlert(GLYPH.hold, 'hold', `${d.orderId} held for seller review — score ${d.score}/100`, d.orderTotal);
+    }
+  }
+  if (tool === 'verify_receipt' && !d.verified) {
+    raiseAlert(GLYPH.flag, 'danger', `${d.orderId} settlement mismatch — ${d.mismatchCount} field(s) disagree`, d.exposure);
+  }
+  if (tool === 'flag_order') {
+    raiseAlert(GLYPH.flag, 'danger', `${d.orderId} marked disputed`, d.exposure);
+  }
+}
+
+/* --- seller action controls ------------------------------------------------ */
+/* These are not decoration: each button is a real tools/call against the same
+   gateway, so the operator can act on a document the moment they read it. */
+
+function actionBar(doc, ctx) {
+  const orderId = ctx.orderId;
+  const agentId = ctx.agentId;
+  if (!orderId || !agentId) return;
+
+  const s = section(doc, 'Seller actions', 'live tool calls');
+  const bar = el('div', 'gw-actions');
+  const note = el('div', 'gw-act-note');
+
+  const mk = (label, tone, run) => {
+    const b = el('button', 'gw-act', esc(label));
+    b.type = 'button';
+    if (tone) b.dataset.tone = tone;
+    b.addEventListener('click', () => guard(async () => {
+      b.disabled = true;
+      try {
+        const msg = await run();
+        b.dataset.done = 'true';
+        note.innerHTML += `› ${esc(msg)}<br>`;
+      } catch (e) {
+        b.disabled = false;
+        note.innerHTML += `› <span style="color:var(--danger)">${esc(e.message)}</span><br>`;
+      }
+    }));
+    bar.appendChild(b);
+    return b;
+  };
+
+  mk('⚑ Flag order', 'danger', async () => {
+    const d = await mcp.call('flag_order', {
+      order_id: orderId,
+      reason: 'Flagged by seller from the gateway console',
+      evidence: ctx.evidence || [],
+    });
+    alertFor('flag_order', d);
+    renderDashboard(await mcp.call('get_sales_dashboard', {}));
+    return `${d.orderId} marked ${d.status} — exposure ${d.exposure}`;
+  });
+
+  mk('✗ Blocklist agent', 'danger', async () => {
+    const d = await mcp.call('blocklist_agent', {
+      agent_id: agentId,
+      reason: 'Blocked by seller from the gateway console',
+    });
+    raiseAlert(GLYPH.fail, 'danger', `${d.displayName} banned from the store`, `${d.blocklistSize} on list`);
+    renderDashboard(await mcp.call('get_sales_dashboard', {}));
+    return `${d.displayName} banned — ${d.blocklistSize} agent(s) on the blocklist`;
+  });
+
+  mk('‖ Re-screen order', 'hold', async () => {
+    const d = await mcp.call('compute_trust_score', { order_id: orderId });
+    alertFor('compute_trust_score', d);
+    renderDashboard(await mcp.call('get_sales_dashboard', {}));
+    return `${d.orderId} re-scored ${d.score}/100 → ${d.verdict}`;
+  });
+
+  s.appendChild(bar);
+  s.appendChild(note);
+}
+
 function renderDashboard(d) {
   $('protected').textContent = inr(d.revenueProtectedMinor);
   const c = d.counts || {};
@@ -734,6 +899,11 @@ function statusOf(tool, d) {
 async function runCase(c) {
   const ctx = {};
   let doc = null;
+  let docCtx = null;
+
+  /* Each document gets its own action bar, appended once the document is
+     finished — i.e. when the next one opens, or when the case ends. */
+  const closeDoc = () => { if (doc && docCtx) actionBar(doc, docCtx); };
 
   for (const step of c.steps) {
     /* A step that opens a document needs its data before the RefStrip can be
@@ -759,12 +929,24 @@ async function runCase(c) {
     ctx[step.tool] = data;
 
     if (opener) {
+      closeDoc();
       const spec = opener(data);
       doc = newDocument(spec.left, spec.right, spec.width);
+      docCtx = { orderId: data.orderId, agentId: data.agentId };
       traceStep(doc, step.label)(statusOf(step.tool, data), ms);
     } else if (settle) {
       settle(statusOf(step.tool, data), ms);
     }
+
+    // A receipt diff names the agent and supplies the evidence a dispute cites.
+    if (step.tool === 'verify_receipt' && docCtx) {
+      docCtx.agentId = data.agentId || docCtx.agentId;
+      docCtx.evidence = (data.diffs || [])
+        .filter(x => !x.match)
+        .map(x => `${x.field}: receipt ${x.receiptValue} vs chain ${x.chainValue}`);
+    }
+
+    alertFor(step.tool, data);
 
     if (step.tool === 'get_sales_dashboard') {
       renderDashboard(data);
@@ -774,6 +956,8 @@ async function runCase(c) {
 
     if (BEAT) await wait(BEAT);
   }
+
+  closeDoc();
 }
 
 /* ============================================================== chrome === */
@@ -795,12 +979,15 @@ function markCase(id) {
 
 function setBusy(state) {
   busy = state;
-  document.querySelectorAll('.gw-shell-tab, .gw-shell-chip').forEach(b => { b.disabled = state; });
+  document.querySelectorAll('.gw-shell-tab, .gw-shell-chip, .gw-act').forEach(b => {
+    if (b.dataset.done !== 'true') b.disabled = state;
+  });
   if (state) setStatus('busy');
 }
 
 function clearStage() {
   $('stage').innerHTML = '';
+  clearAlerts();
 }
 
 async function guard(fn) {
@@ -828,14 +1015,18 @@ async function connect() {
 }
 
 function boot() {
+  const tabs = $('caseTabs');
   CASES.forEach(c => {
-    const b = document.querySelector(`.gw-shell-tab[data-case="${c.id}"]`);
-    b.textContent = `Case ${c.no} · ${c.name}`;
+    const b = el('button', 'gw-shell-tab', `Case ${c.no} · ${esc(c.name)}`);
+    b.type = 'button';
+    b.dataset.case = c.id;
+    b.setAttribute('aria-current', 'false');
     b.addEventListener('click', () => guard(async () => {
       markCase(c.id);
       clearStage();
       await runCase(c);
     }));
+    tabs.appendChild(b);
   });
 
   $('runAll').addEventListener('click', () => guard(async () => {
@@ -862,6 +1053,14 @@ function boot() {
     mcp.ready = false;
     mcp.session = null;
     guard(connect);
+  });
+
+  const alertBtn = $('alerts');
+  alertBtn.addEventListener('click', () => {
+    alertsOn = !alertsOn;
+    alertBtn.setAttribute('aria-pressed', String(alertsOn));
+    alertBtn.textContent = alertsOn ? '⚑ alerts on' : '⚑ alerts off';
+    drawAlerts();
   });
 
   const themeBtn = $('theme');
